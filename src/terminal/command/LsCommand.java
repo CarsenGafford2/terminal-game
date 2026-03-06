@@ -1,17 +1,11 @@
 package terminal.command;
 
+import terminal.VfsNode;
 import terminal.VirtualFileSystem;
 
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Implements the {@code ls} command.
- *
- * Supported flags (may be combined, e.g. {@code ls -la}):
- *   -l   long listing format (permissions, size, timestamps)
- *   -a   show hidden entries (names starting with '.')
- */
 public class LsCommand extends Command {
 
     private static final String OWNER = "user";
@@ -51,12 +45,10 @@ public class LsCommand extends Command {
         return buildShortListing(entries);
     }
 
-    // ---------------------------------------------------------------
-
     private String buildLongListing(List<String> entries) {
         StringBuilder sb = new StringBuilder("total " + (entries.size() * 4) + "\n");
         for (String name : entries) {
-            VirtualFileSystem.Node node = fs.resolve(name);
+            VfsNode node = fs.resolve(name);
             if (node == null) continue;
 
             String typeChar  = node.isDirectory ? "d" : "-";

@@ -2,45 +2,28 @@ package terminal;
 
 import java.util.*;
 
-
 public class VirtualFileSystem {
 
-    public static class Node {
-        public final String name;
-        public final boolean isDirectory;
-        public String content;
-        public final Map<String, Node> children;
-        public Node parent;
-
-        public Node(String name, boolean isDirectory, Node parent) {
-            this.name = name;
-            this.isDirectory = isDirectory;
-            this.parent = parent;
-            this.children = isDirectory ? new LinkedHashMap<>() : null;
-            this.content  = isDirectory ? null : "";
-        }
-    }
-
-    private final Node root;
-    private Node current;
+    private final VfsNode root;
+    private VfsNode current;
 
     public VirtualFileSystem() {
-        root = new Node("/", true, null);
+        root = new VfsNode("/", true, null);
         root.parent = root;
 
         addDir(root, "bin");
-        Node etc  = addDir(root, "etc");
-        Node home = addDir(root, "home");
+        VfsNode etc  = addDir(root, "etc");
+        VfsNode home = addDir(root, "home");
         addDir(root, "tmp");
-        Node usr  = addDir(root, "usr");
-        Node var  = addDir(root, "var");
+        VfsNode usr  = addDir(root, "usr");
+        VfsNode var  = addDir(root, "var");
 
         addDir(usr, "bin");
         addDir(usr, "lib");
         addDir(usr, "share");
         addDir(var, "log");
 
-        Node user = addDir(home, "user");
+        VfsNode user = addDir(home, "user");
         addDir(user, "projects");
         addDir(user, "downloads");
 
@@ -72,14 +55,14 @@ public class VirtualFileSystem {
         current = user;
     }
 
-    public Node getCurrentDir() {
+    public VfsNode getCurrentDir() {
         return current;
     }
 
     public String getCurrentPath() {
         if (current == root) return "/";
         Deque<String> parts = new ArrayDeque<>();
-        Node n = current;
+        VfsNode n = current;
         while (n != root) {
             parts.addFirst(n.name);
             n = n.parent;
@@ -87,10 +70,10 @@ public class VirtualFileSystem {
         return "/" + String.join("/", parts);
     }
 
-    public String getNodePath(Node node) {
-        if (node == root) return "/";
+    public String getNodePath(VfsNode VfsNode) {
+        if (VfsNode == root) return "/";
         Deque<String> parts = new ArrayDeque<>();
-        Node n = node;
+        VfsNode n = VfsNode;
         while (n != root) {
             parts.addFirst(n.name);
             n = n.parent;
@@ -98,12 +81,12 @@ public class VirtualFileSystem {
         return "/" + String.join("/", parts);
     }
 
-    public Node resolve(String path) {
+    public VfsNode resolve(String path) {
         if (path == null || path.isEmpty() || path.equals("~")) {
             return getHome();
         }
         if (path.startsWith("~/")) {
-            Node home = getHome();
+            VfsNode home = getHome();
             if (home == null) return null;
             return resolveFrom(home, path.substring(2));
         }
@@ -114,7 +97,7 @@ public class VirtualFileSystem {
     }
 
     public boolean changeDirectory(String path) {
-        Node target = resolve(path);
+        VfsNode target = resolve(path);
         if (target != null && target.isDirectory) {
             current = target;
             return true;
@@ -130,7 +113,7 @@ public class VirtualFileSystem {
 
     public boolean createFile(String name) {
         if (current.children.containsKey(name)) {
-            Node n = current.children.get(name);
+            VfsNode n = current.children.get(name);
             return !n.isDirectory;
         }
         addFile(current, name, "");
@@ -138,7 +121,7 @@ public class VirtualFileSystem {
     }
 
     public boolean writeFile(String name, String content) {
-        Node n = resolve(name);
+        VfsNode n = resolve(name);
         if (n == null) {
             addFile(current, name, content);
             return true;
@@ -149,7 +132,7 @@ public class VirtualFileSystem {
     }
 
     public boolean remove(String name, boolean recursive) {
-        Node n = current.children.get(name);
+        VfsNode n = current.children.get(name);
         if (n == null) return false;
         if (n.isDirectory && !recursive) return false;
         current.children.remove(name);
@@ -161,33 +144,33 @@ public class VirtualFileSystem {
     }
 
     public String readFile(String nameOrPath) {
-        Node n = resolve(nameOrPath);
+        VfsNode n = resolve(nameOrPath);
         if (n != null && !n.isDirectory) return n.content;
         return null;
     }
 
-    private static Node addDir(Node parent, String name) {
-        Node dir = new Node(name, true, parent);
+    private static VfsNode addDir(VfsNode parent, String name) {
+        VfsNode dir = new VfsNode(name, true, parent);
         parent.children.put(name, dir);
         return dir;
     }
 
-    private static Node addFile(Node parent, String name, String content) {
-        Node file = new Node(name, false, parent);
+    private static VfsNode addFile(VfsNode parent, String name, String content) {
+        VfsNode file = new VfsNode(name, false, parent);
         file.content = content;
         parent.children.put(name, file);
         return file;
     }
 
-    private Node getHome() {
-        Node h = root.children.get("home");
+    private VfsNode getHome() {
+        VfsNode h = root.children.get("home");
         if (h == null) return root;
-        Node u = h.children.get("user");
+        VfsNode u = h.children.get("user");
         return u != null ? u : h;
     }
 
-    private Node resolveFrom(Node start, String path) {
-        Node n = start;
+    private VfsNode resolveFrom(VfsNode start, String path) {
+        VfsNode n = start;
         for (String part : path.split("/")) {
             if (part.isEmpty() || part.equals(".")) continue;
             if (part.equals("..")) {
