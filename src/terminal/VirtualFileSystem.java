@@ -28,10 +28,10 @@ public class VirtualFileSystem {
         root = new Node("/", true, null);
         root.parent = root;
 
-        Node bin  = addDir(root, "bin");
+        addDir(root, "bin");
         Node etc  = addDir(root, "etc");
         Node home = addDir(root, "home");
-        Node tmp  = addDir(root, "tmp");
+        addDir(root, "tmp");
         Node usr  = addDir(root, "usr");
         Node var  = addDir(root, "var");
 

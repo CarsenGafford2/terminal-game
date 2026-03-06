@@ -26,6 +26,11 @@ public class TerminalWindow extends JFrame {
     private final JTextField        inputField;
     private final CommandProcessor  processor;
 
+    /** Exposes the processor so callers in Main can register custom commands. */
+    public CommandProcessor getCommandProcessor() {
+        return processor;
+    }
+
     public TerminalWindow() {
         processor = new CommandProcessor();
 
@@ -182,8 +187,7 @@ public class TerminalWindow extends JFrame {
     private void printWelcome() {
         appendText("─".repeat(72) + "\n", COL_BORDER);
         appendText("  Linux Terminal Simulator  |  hostname: server01  |  user: user\n", COL_PROMPT);
-        appendText("  Type 'help' to list all available commands.\n", COL_TEXT);
-        appendText("  Use ↑/↓ arrow keys to navigate command history.\n", COL_TEXT);
+        appendText("  Type 'help' for available commands. Use \u2191/\u2193 for history.\n", COL_TEXT);
         appendText("─".repeat(72) + "\n\n", COL_BORDER);
         updatePromptLabel();
     }
