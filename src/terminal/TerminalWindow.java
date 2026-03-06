@@ -6,54 +6,29 @@ import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
 
-/**
- * A Swing-based window that looks and behaves like a Linux terminal.
- *
- * Layout:
- *   ┌──────────────────────────────────────────┐
- *   │  [title bar] Terminal — user@server01    │
- *   ├──────────────────────────────────────────┤
- *   │                                          │
- *   │  [scrollable output pane]                │
- *   │                                          │
- *   ├──────────────────────────────────────────┤
- *   │  [prompt label] [input text field]       │
- *   └──────────────────────────────────────────┘
- */
 public class TerminalWindow extends JFrame {
 
-    // ------------------------------------------------------------------
-    // Colour palette (dark terminal theme)
-    // ------------------------------------------------------------------
     private static final Color COL_BG       = new Color(0x1a, 0x1a, 0x2e); // deep navy
     private static final Color COL_TEXT     = new Color(0xe0, 0xe0, 0xe0); // light grey
     private static final Color COL_PROMPT   = new Color(0x79, 0xb8, 0xff); // blue
     private static final Color COL_PATH     = new Color(0xb3, 0xf0, 0xa5); // green
     private static final Color COL_DOLLAR   = new Color(0xff, 0xff, 0xff); // white
     private static final Color COL_ERROR    = new Color(0xff, 0x6b, 0x6b); // red
-    private static final Color COL_WELCOME  = new Color(0xff, 0xd7, 0x00); // gold
     private static final Color COL_INPUT    = new Color(0xe0, 0xe0, 0xe0); // same as text
     private static final Color COL_BORDER   = new Color(0x30, 0x30, 0x55); // subtle border
 
     private static final Font  FONT         = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     private static final int   PAD          = 8;
 
-    // ------------------------------------------------------------------
-    // UI components
-    // ------------------------------------------------------------------
     private final JTextPane         outputPane;
     private final StyledDocument    doc;
     private final JLabel            promptLabel;
     private final JTextField        inputField;
     private final CommandProcessor  processor;
 
-    // ------------------------------------------------------------------
-    // Constructor
-    // ------------------------------------------------------------------
     public TerminalWindow() {
         processor = new CommandProcessor();
 
-        // ----- output pane -----
         outputPane = new JTextPane();
         outputPane.setEditable(false);
         outputPane.setBackground(COL_BG);
@@ -68,7 +43,6 @@ public class TerminalWindow extends JFrame {
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.getVerticalScrollBar().setBackground(COL_BG);
 
-        // ----- input row -----
         promptLabel = new JLabel(processor.getPrompt());
         promptLabel.setFont(FONT);
         promptLabel.setForeground(COL_PROMPT);
@@ -90,13 +64,11 @@ public class TerminalWindow extends JFrame {
         inputRow.add(promptLabel, BorderLayout.WEST);
         inputRow.add(inputField,  BorderLayout.CENTER);
 
-        // ----- main panel -----
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(COL_BG);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
         mainPanel.add(inputRow,   BorderLayout.SOUTH);
 
-        // ----- frame setup -----
         setTitle("Terminal — user@server01");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setContentPane(mainPanel);
@@ -104,7 +76,6 @@ public class TerminalWindow extends JFrame {
         setMinimumSize(new Dimension(600, 400));
         setLocationRelativeTo(null);
 
-        // ----- event listeners -----
         inputField.addActionListener(e -> handleEnter());
 
         inputField.addKeyListener(new KeyAdapter() {
@@ -119,7 +90,6 @@ public class TerminalWindow extends JFrame {
             }
         });
 
-        // Click anywhere on the output → focus input
         outputPane.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 inputField.requestFocusInWindow();
@@ -132,20 +102,14 @@ public class TerminalWindow extends JFrame {
             }
         });
 
-        // ----- initial content -----
         printWelcome();
     }
-
-    // ------------------------------------------------------------------
-    // Input handling
-    // ------------------------------------------------------------------
 
     private void handleEnter() {
         String input = inputField.getText();
         inputField.setText("");
         processor.resetHistoryIndex();
 
-        // Echo the command with a coloured prompt in the output pane
         appendPrompt(processor.getPrompt());
         appendText(input + "\n", COL_TEXT);
 
@@ -163,7 +127,6 @@ public class TerminalWindow extends JFrame {
         }
 
         if (result != null && !result.isEmpty()) {
-            // Print error lines in red, rest in normal text colour
             for (String line : result.split("\n", -1)) {
                 boolean isError = line.startsWith("bash:") || line.endsWith(": command not found")
                         || line.contains(": No such file") || line.contains(": Not a directory")
@@ -177,16 +140,7 @@ public class TerminalWindow extends JFrame {
         scrollToBottom();
     }
 
-    // ------------------------------------------------------------------
-    // Styled text helpers
-    // ------------------------------------------------------------------
-
-    /**
-     * Append a coloured prompt.  The prompt has the form "user@host:path$ ".
-     * We split it into segments and colour each one.
-     */
     private void appendPrompt(String prompt) {
-        // user@host   :   path   $
         int atIdx    = prompt.indexOf('@');
         int colonIdx = prompt.indexOf(':');
         int dollarIdx = prompt.lastIndexOf('$');
@@ -195,13 +149,9 @@ public class TerminalWindow extends JFrame {
             appendText(prompt, COL_PROMPT);
             return;
         }
-        // "user@host"
         appendText(prompt.substring(0, colonIdx), COL_PROMPT);
-        // ":"
         appendText(":", COL_TEXT);
-        // path
         appendText(prompt.substring(colonIdx + 1, dollarIdx), COL_PATH);
-        // "$ "
         appendText(prompt.substring(dollarIdx), COL_DOLLAR);
     }
 
@@ -230,14 +180,6 @@ public class TerminalWindow extends JFrame {
     // ------------------------------------------------------------------
 
     private void printWelcome() {
-        appendText(
-            " _     _                  _____                      _             _\n" +
-            "| |   (_)_ __  _   ___  |_   _|__ _ __ _ __ ___ (_)_ __   __ _| |\n" +
-            "| |   | | '_ \\| | | \\ \\/ / | |/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` | |\n" +
-            "| |___| | | | | |_| |>  <  | |  __/ |  | | | | | | | | | | (_| | |\n" +
-            "|_____|_|_| |_|\\__,_/_/\\_\\ |_|\\___|_|  |_| |_| |_|_|_| |_|\\__,_|_|\n" +
-            "  Simulator\n",
-            COL_WELCOME);
         appendText("─".repeat(72) + "\n", COL_BORDER);
         appendText("  Linux Terminal Simulator  |  hostname: server01  |  user: user\n", COL_PROMPT);
         appendText("  Type 'help' to list all available commands.\n", COL_TEXT);

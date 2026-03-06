@@ -4,16 +4,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/**
- * Parses user input and dispatches to simulated Linux command implementations.
- * Returns plain strings (the command output), or one of the special sentinel
- * values SIGNAL_CLEAR / SIGNAL_EXIT that the UI acts on.
- */
 public class CommandProcessor {
 
-    /** Returned when the terminal should be cleared. */
     public static final String SIGNAL_CLEAR = "\u0000CLEAR";
-    /** Returned when the application should exit. */
     public static final String SIGNAL_EXIT  = "\u0000EXIT";
 
     private static final String USERNAME = "user";
@@ -29,10 +22,6 @@ public class CommandProcessor {
         history = new ArrayList<>();
     }
 
-    // -------------------------------------------------------------------------
-    // Prompt
-    // -------------------------------------------------------------------------
-
     public String getPrompt() {
         String path = fs.getCurrentPath();
         if (path.startsWith(HOME_PATH)) {
@@ -40,10 +29,6 @@ public class CommandProcessor {
         }
         return USERNAME + "@" + HOSTNAME + ":" + path + "$ ";
     }
-
-    // -------------------------------------------------------------------------
-    // History navigation (called by the UI on Up/Down key)
-    // -------------------------------------------------------------------------
 
     public String historyUp() {
         if (history.isEmpty()) return "";
@@ -67,10 +52,6 @@ public class CommandProcessor {
         historyIndex = -1;
     }
 
-    // -------------------------------------------------------------------------
-    // Command dispatch
-    // -------------------------------------------------------------------------
-
     public String process(String input) {
         String trimmed = input.trim();
         if (trimmed.isEmpty()) return "";
@@ -78,7 +59,6 @@ public class CommandProcessor {
         history.add(trimmed);
         historyIndex = -1;
 
-        // Simple tokeniser that respects double-quoted strings
         List<String> tokens = tokenise(trimmed);
         if (tokens.isEmpty()) return "";
 
@@ -86,13 +66,11 @@ public class CommandProcessor {
         String[] args = tokens.subList(1, tokens.size()).toArray(new String[0]);
 
         switch (cmd) {
-            // Navigation
             case "ls":       return cmdLs(args);
             case "cd":       return cmdCd(args);
             case "pwd":      return cmdPwd();
             case "tree":     return cmdTree(args);
 
-            // File ops
             case "cat":      return cmdCat(args);
             case "touch":    return cmdTouch(args);
             case "mkdir":    return cmdMkdir(args);
@@ -103,7 +81,6 @@ public class CommandProcessor {
             case "echo":     return cmdEcho(args);
             case "grep":     return cmdGrep(args);
 
-            // System info
             case "whoami":   return USERNAME;
             case "hostname": return HOSTNAME;
             case "date":     return LocalDateTime.now()
@@ -118,7 +95,6 @@ public class CommandProcessor {
             case "env":      return cmdEnv();
             case "id":       return "uid=1000(" + USERNAME + ") gid=1000(" + USERNAME + ") groups=1000(" + USERNAME + "),4(adm),27(sudo)";
 
-            // Network (simulated)
             case "ping":     return cmdPing(args);
             case "ifconfig": return cmdIfconfig();
             case "ip":       return cmdIp(args);
@@ -126,7 +102,6 @@ public class CommandProcessor {
             case "wget":     return cmdWget(args);
             case "ssh":      return cmdSsh(args);
 
-            // Misc
             case "history":  return cmdHistory();
             case "clear":    return SIGNAL_CLEAR;
             case "exit":
@@ -146,10 +121,6 @@ public class CommandProcessor {
                 return cmd + ": command not found";
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Navigation commands
-    // -------------------------------------------------------------------------
 
     private String cmdLs(String[] args) {
         boolean longFmt  = false;
@@ -182,7 +153,6 @@ public class CommandProcessor {
             return sb.toString().trim();
         }
 
-        // Short format: wrap into columns
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < entries.size(); i++) {
             if (i > 0) sb.append("  ");
@@ -224,10 +194,6 @@ public class CommandProcessor {
         }
         return sb.toString();
     }
-
-    // -------------------------------------------------------------------------
-    // File commands
-    // -------------------------------------------------------------------------
 
     private String cmdCat(String[] args) {
         if (args.length == 0) return "cat: missing operand";
@@ -331,10 +297,6 @@ public class CommandProcessor {
         return sb.toString().stripTrailing();
     }
 
-    // -------------------------------------------------------------------------
-    // System info commands
-    // -------------------------------------------------------------------------
-
     private String cmdUname(String[] args) {
         boolean all = args.length > 0 && args[0].contains("a");
         if (all) return "Linux " + HOSTNAME + " 5.15.0-1-generic #1 SMP Mon Jan 01 00:00:00 UTC 2024 x86_64 GNU/Linux";
@@ -393,10 +355,6 @@ public class CommandProcessor {
                "HOSTNAME=" + HOSTNAME + "\nLANG=en_US.UTF-8\nEDITOR=nano";
     }
 
-    // -------------------------------------------------------------------------
-    // Network commands (all simulated)
-    // -------------------------------------------------------------------------
-
     private String cmdPing(String[] args) {
         if (args.length == 0) return "ping: usage error: Destination address required";
         String host = args[args.length - 1];
@@ -454,10 +412,6 @@ public class CommandProcessor {
         if (args.length == 0) return "usage: ssh [-l login_name] hostname [command]";
         return "ssh: connect to host " + args[args.length - 1] + " port 22: Connection refused";
     }
-
-    // -------------------------------------------------------------------------
-    // Misc commands
-    // -------------------------------------------------------------------------
 
     private String cmdHistory() {
         StringBuilder sb = new StringBuilder();
@@ -532,7 +486,6 @@ public class CommandProcessor {
     private String cmdSudo(String[] args) {
         if (args.length == 0) return "usage: sudo command";
         if (args[0].equals("-s") || args[0].equals("-i")) return "root@" + HOSTNAME + ":~# (simulated root — type 'exit' to leave)";
-        // Re-run as "root" (same processor, no real privilege)
         String[] subArgs = Arrays.copyOfRange(args, 0, args.length);
         String sub = String.join(" ", subArgs);
         String result = process(sub);
@@ -554,10 +507,6 @@ public class CommandProcessor {
         }
         return sb.toString().stripTrailing();
     }
-
-    // -------------------------------------------------------------------------
-    // Tokeniser: splits on whitespace, respects double-quoted strings
-    // -------------------------------------------------------------------------
 
     private static List<String> tokenise(String input) {
         List<String> tokens = new ArrayList<>();
